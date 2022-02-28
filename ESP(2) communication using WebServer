@@ -1,0 +1,206 @@
+//This is the button wala ESP32
+#include <WiFi.h>       //to connect ESP32 with your network
+#include<WebServer.h>
+#define BTN1 12
+#define BTN2 14
+#define BTN3 27
+
+char *ssid= "ESP32_host";
+char *pass = "password";
+
+bool btn1_state,btn2_state,btn3_state;
+bool last_btn1_state,last_btn2_state,last_btn3_state;
+bool cbtn1_state,cbtn2_state,cbtn3_state;
+String url;
+int count1=0,count2=0,count3=0;
+
+WebServer server(80);
+
+String btn()
+{
+  if(last_btn1_state == HIGH && btn1_state == LOW)
+  {
+    count1+=1;
+  }else{
+    count1 = count1;
+  }
+
+  if(last_btn2_state == HIGH && btn2_state == LOW)
+  {
+     count2+=1;
+  }else{
+    count2 = count2;
+  }
+  
+  if(last_btn3_state == HIGH && btn3_state == LOW)
+  {
+     count3+=1;
+  }else{
+    count3 = count3;
+  }
+
+  last_btn1_state = btn1_state;
+  last_btn2_state = btn2_state;
+  last_btn3_state = btn3_state;
+
+  if(count1%2==0)
+  {
+    cbtn1_state = LOW;
+  }else
+  {
+    cbtn1_state = HIGH;
+  }
+
+  if(count2%2==0)
+  {
+    cbtn2_state = LOW;
+  }else
+  {
+    cbtn2_state = HIGH;
+  }
+
+  if(count3%2==0)
+  {
+    cbtn3_state = LOW;
+  }else
+  {
+    cbtn3_state = HIGH;
+  }
+
+  return sendBtnRequest();
+}
+
+String sendBtnRequest()
+{
+  return "["+String(cbtn1_state)+","+String(cbtn2_state)+","+String(cbtn3_state)+"]";;
+}
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(115200);
+
+  pinMode(BTN1,INPUT_PULLUP);
+  pinMode(BTN2,INPUT_PULLUP);
+  pinMode(BTN3,INPUT_PULLUP);
+
+  WiFi.mode(WIFI_AP);
+  
+  WiFi.softAP(ssid, pass);
+  
+  Serial.print("WiFi setup at IP Address: ");
+  Serial.println(WiFi.softAPIP());
+     
+  server.on("/", handleRoot);
+  server.begin();
+  
+  last_btn1_state = digitalRead(BTN1);
+  last_btn2_state = digitalRead(BTN2);
+  last_btn3_state = digitalRead(BTN3);
+    
+}
+
+void handleRoot() {
+  server.send(200, "text/plain", btn().c_str());
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  
+  server.handleClient();
+  btn1_state = digitalRead(BTN1);
+  btn2_state = digitalRead(BTN2);
+  btn3_state = digitalRead(BTN3);
+  
+  btn();
+  Serial.print(cbtn1_state);
+  Serial.print(cbtn2_state);
+  Serial.println(cbtn3_state);
+}
+s
+
+//This is LED wala ESP32
+#include <WiFi.h>       //to connect ESP32 with your network
+#include<WebServer.h>  //to setup webserver on ESP32
+#include<HTTPClient.h>
+#define LED1 12
+#define LED2 14
+#define LED3 27
+
+char *ssid = "ESP32_host";
+char *pass = "password";
+
+bool led1_state = LOW,led2_state = LOW,led3_state = LOW;
+String url,response;
+char resp[8];
+
+WebServer server(80);    //creating object of class AsyncWebServer (read about this) with parameter 80 for setting up HTTP connection
+void setLed()
+{
+  if(resp[1]=='0')
+  {
+    digitalWrite(LED1,LOW);
+  }
+  else
+  {
+    digitalWrite(LED1,HIGH);
+  }
+
+  if(resp[3]=='0')
+  {
+    digitalWrite(LED2,LOW);
+  }
+  else
+  {
+    digitalWrite(LED2,HIGH);
+  }
+
+  if(resp[5]=='0')
+  {
+    digitalWrite(LED3,LOW);
+  }
+  else
+  {
+    digitalWrite(LED3,HIGH);
+  }
+}
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(115200); //115200 bits per second the data passed from.....
+
+  pinMode(LED1,OUTPUT);
+  pinMode(LED2,OUTPUT);
+  pinMode(LED3,OUTPUT);
+  
+  WiFi.begin(ssid,pass);
+  while(WiFi.status() != WL_CONNECTED)
+  {
+    Serial.println("Connecting to Wifi...");
+    delay(1000);
+  }
+
+  Serial.print("Connected to IP address ");
+  Serial.println(WiFi.localIP());
+
+  url="http://192.168.4.1/";
+  Serial.println(url);
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  if (WiFi.status() == WL_CONNECTED) { 
+ 
+    HTTPClient http;  //Declare an object of class HTTPClient
+
+    http.begin(url);  
+    
+    int responseSize = http.GET();                                 
+ 
+    if (responseSize > 0) { 
+      response = http.getString();  
+      Serial.println(response);            
+    }
+    response.toCharArray(resp,response.length());
+    http.end(); 
+    setLed();  
+  }  
+}
