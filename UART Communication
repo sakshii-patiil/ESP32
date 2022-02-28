@@ -1,0 +1,67 @@
+//sending ESP32 - UART communication
+#include<HardwareSerial.h>
+#define T 27
+#define R 26
+
+HardwareSerial sender(1);
+HardwareSerial receiver(2);
+String data,str;
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(115200);
+  sender.begin(115200,SERIAL_8N1,T,R);
+  //receiver.begin(115200,SERIAL_8N1,R,T);
+  Serial.println("Sending the data...");
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  
+  if(Serial.available())
+  {
+    data = Serial.readString();
+    Serial.print("Sent : ");
+    Serial.println(data);
+  }
+  sender.print(data);
+  data="";
+  if(sender.available())
+  {
+    str = sender.readString();
+    Serial.print("Received : ");
+    Serial.println(str);
+  }
+}
+
+//receiving ESP32 - UART communication
+#include<HardwareSerial.h>
+#define T 26
+#define R 27
+
+HardwareSerial sender(1);
+HardwareSerial receiver(2);
+String str,data;
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(115200);
+  receiver.begin(115200,SERIAL_8N1,T,R);
+  //sender.begin(115200,SERIAL_8N1,T,R);
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  if(receiver.available())
+  {
+    str = receiver.readString();
+    Serial.print("Received : ");
+    Serial.println(str);
+  }
+  if(Serial.available())
+  {
+    data = Serial.readString();
+    Serial.print("Sent : ");
+    Serial.println(data);
+  }
+  receiver.print(data);
+  data = "";
+}
